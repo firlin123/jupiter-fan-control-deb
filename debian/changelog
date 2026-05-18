@@ -1,3 +1,11 @@
+jupiter-fan-control (20260319.1) unstable; urgency=medium
+
+  * 2330edd - Do not attempt to run as a service if DMI information isn't available (Olivier Tilloy <otilloy@igalia.com>)
+  * 4be8e95 - Minor fixes (Vicki Pfau <vi@endrift.com>)
+  * f158a7d - Gracefully handle missing DMI ID bios version or board name (Olivier Tilloy <otilloy@igalia.com>)
+
+ -- Adam Weld <weld@valvesoftware.com>  Thu, 19 Mar 2026 10:17:07 -0700
+
 jupiter-fan-control (20240523.3) unstable; urgency=medium
 
   * 689b3be - move initialize_log_file to top of loop_control (Adam Weld <weld@valvesoftware.com>)

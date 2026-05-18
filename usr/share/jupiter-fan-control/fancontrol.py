@@ -157,8 +157,10 @@ class DmiId:
         self.board_name = self.read("board_name")
 
     def read(self, identifier):
-        with open(self.id / identifier, "r", encoding="utf-8") as file:
-            return file.read().strip()
+        try:
+            return open(self.id / identifier, "r", encoding="utf-8").read().strip()
+        except FileNotFoundError:
+            return None
 
 
 class Fan:
@@ -675,9 +677,7 @@ if __name__ == "__main__":
     elif dmi_id.board_name == "Galileo":
         config_file_path = "/usr/share/jupiter-fan-control/galileo-config.yaml"
     else:
-        raise NotImplementedError(
-            f"DMI_ID Board Name not implemented! bios: {dmi_id.bios_version}    board: {dmi_id.board_name}"
-        )
+        sys.exit(0)
 
     # catch fan service trying to start before the hwmonitors are fully loaded
     for retry in range(10):

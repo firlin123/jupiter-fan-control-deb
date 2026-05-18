@@ -1,10 +1,10 @@
 #!/bin/bash
 
 PKGBASE="jupiter-fan-control"
-PKGVER="20240523.3"
-PKGREL="2"
+PKGVER="20260319.1"
+PKGREL="4"
 
-TAG="20240523.3"
+TAG="20260319.1"
 SRCNAME="jupiter-fan-control"
 
 # Get full path to this script
@@ -99,7 +99,6 @@ git checkout "$TAG"
 find . -name "*.py" -exec sed -i 's|#!/usr/bin/python|#!/usr/bin/python3|' {} \;
 cp "$SCRIPT" prepare.sh
 echo "# $PKGBASE-ubuntu" > README.md
-sed -i 's/"""Calculates PID value for given reference feedback/r"""Calculates PID value for given reference feedback/' usr/share/jupiter-fan-control/PID.py
 
 echo "Generating debian files..."
 mkdir -p debian
