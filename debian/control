@@ -1,11 +1,12 @@
 Source: jupiter-fan-control
 Section: utils
 Priority: optional
-Maintainer: Adam Weld <weld@valvesoftware.com>, Christian Marcheselli <christianm@valvesoftware.com>
+Maintainer: Adam Weld <weld@valvesoftware.com>
+Uploaders: Christian Marcheselli <christianm@valvesoftware.com>
 Standards-Version: 4.7.0
 
 Package: jupiter-fan-control
 Architecture: all
 Depends: python3-yaml, python3 (>= 3.11)
-Description: Jupiter fan controller
-
+Description: Steam Deck fan control for debian-based distributions
+ Controls the fan speed more intelligently than the default BIOS fan curve, based on the temperature of various components, and the current power state of the system. Relies on steamdeck hwmon. Please install the DKMS module to get the necessary hwmon support (or use SteamOS kernel, which has it built-in). Works only on Steam Deck, and won't do anything on other hardware.

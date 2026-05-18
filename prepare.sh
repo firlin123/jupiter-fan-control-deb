@@ -7,127 +7,170 @@ PKGREL="4"
 TAG="20260319.1"
 SRCNAME="jupiter-fan-control"
 
-# Get full path to this script
-SCRIPT=$(realpath $0)
+pkg_name="$PKGBASE-$PKGVER"
+pkg_full="$pkg_name-$PKGREL"
+script=$(realpath "$0")
 
 # Generate debian changelog from git log
-function generate-changelog {
-    SEEN_HASHES=()
-    OUT=""
-    while read TAG; do
-        if ! [[ "$TAG" =~ ^[0-9]{8}(\.[0-9]+)?$ ]]; then
+function generate_changelog {
+    seen_hashes=()
+    out=""
+    while read -r tag; do
+        if ! [[ "$tag" =~ ^[0-9]{8}(\.[0-9]+)?$ ]]; then
             continue
         fi
 
-        CHANGE=""
+        change=""
 
-        TAG_DATE=$(git log -1 --format=%ad --date=rfc "$TAG")
+        tag_date=$(git log -1 --format=%ad --date=rfc "$tag")
 
-        COMMITS=$(git log "$TAG" --pretty=format:"%h - %s (%an)" --no-merges)
+        change+="${PKGBASE} (${tag}) unstable; urgency=medium"
+        change+=$'\n\n'
 
-        CHANGE+="${PKGBASE} (${TAG}) unstable; urgency=medium"
-        CHANGE+="\n\n"
-
-        HAS_COMMITS=false
-        while read COMMIT; do
-            HASH=$(echo "$COMMIT" | cut -d' ' -f1)
-            if [[ " ${SEEN_HASHES[*]} " == *" $HASH "* ]]; then
+        has_commits=false
+        while read -r commit; do
+            hash=$(echo "$commit" | cut -d' ' -f1)
+            if [[ " ${seen_hashes[*]} " == *" $hash "* ]]; then
                 continue
             fi
-            CHANGE+="  * $COMMIT"
-            CHANGE+="\n"
-            SEEN_HASHES+=("$HASH")
-            HAS_COMMITS=true
-        done < <(git log "$TAG" --pretty=format:"%h - %s (%an <%ae>)" --no-merges)
-        if ! $HAS_COMMITS; then
+            change+="  * $commit"
+            change+=$'\n'
+            seen_hashes+=("$hash")
+            has_commits=true
+        done < <(git log "$tag" --pretty=format:"%h - %s (%an <%ae>)" --no-merges)
+
+        if ! $has_commits; then
             continue
         fi
 
-        CHANGE+="\n"
-        CHANGE+=" -- $(git log -1 --format='%an <%ae>' "$TAG")  $TAG_DATE"
-        CHANGE+="\n\n"
+        change+=$'\n'
+        change+=" -- $(git log -1 --format='%an <%ae>' "$tag")  $tag_date"
+        change+=$'\n\n'
 
-        OUT="$CHANGE$OUT"
+        out="$change$out"
     done < <(git tag --list --sort=v:refname)
-    echo -e "$OUT"
+    echo "$out"
 }
 
 # Check dependencies
-MISSING=()
+missing=()
 if ! command -v wget &> /dev/null; then
-    MISSING+=("wget")
+    missing+=("wget")
 fi
 if ! command -v git &> /dev/null; then
-    MISSING+=("git")
+    missing+=("git")
 fi
 if ! command -v dpkg-buildpackage &> /dev/null; then
-    MISSING+=("dpkg-dev")
+    missing+=("dpkg-dev")
 fi
 if ! command -v dh &> /dev/null; then
-    MISSING+=("debhelper")
+    missing+=("debhelper")
 fi
 
-if [[ ${#MISSING[@]} -gt 0 ]]; then
-    echo "Missing dependencies: ${MISSING[@]}"
-    echo "Install them with 'sudo apt install ${MISSING[@]}'"
+if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "Missing dependencies: ${missing[*]}"
+    echo "Install them with 'sudo apt install ${missing[*]}'"
     exit 1
 fi
 
 echo "Downloading source package..."
-wget "https://steamdeck-packages.steamos.cloud/archlinux-mirror/sources/jupiter-main/$PKGBASE-$PKGVER-$PKGREL.src.tar.gz"
-tar -xvf "$PKGBASE-$PKGVER-$PKGREL.src.tar.gz"
+wget "https://steamdeck-packages.steamos.cloud/archlinux-mirror/sources/jupiter-main/$pkg_full.src.tar.gz"
+tar -xvf "$pkg_full.src.tar.gz"
 cd "$PKGBASE"
 
 # Convert PKGBUILD maintainer list to debian format
-MAINTAINERS=""
+maintainer=""
+uploaders=""
 while IFS= read -r line; do
-    if [[ $line == \#\ Maintainer:* ]]; then
-        if [[ ! -z $MAINTAINERS ]]; then
-            MAINTAINERS+=", "
+    if [[ $line =~ ^#\ Maintainer:[[:space:]]*(.*) ]]; then
+        clean_name="${BASH_REMATCH[1]}"
+
+        if [[ -z $maintainer ]]; then
+            maintainer="$clean_name"
+        else
+            if [[ -n $uploaders ]]; then
+                uploaders+=$',\n '
+            fi
+            uploaders+="$clean_name"
         fi
-        MAINTAINERS+="$(echo $line | cut -d' ' -f3-)"
     fi
 done < PKGBUILD
 
 echo "Preparing source..."
 mv "$SRCNAME" "$SRCNAME.orig"
-mkdir "$PKGBASE-$PKGVER"
-mv "$SRCNAME.orig" "$PKGBASE-$PKGVER/.git"
-cd "$PKGBASE-$PKGVER"
+mkdir "$pkg_name"
+mv "$SRCNAME.orig" "$pkg_name/.git"
+cd "$pkg_name"
 git config --unset core.bare
 git checkout "$TAG"
 find . -name "*.py" -exec sed -i 's|#!/usr/bin/python|#!/usr/bin/python3|' {} \;
-cp "$SCRIPT" prepare.sh
-echo "# $PKGBASE-ubuntu" > README.md
+cp "$script" prepare.sh
+cat > README.md <<'EOF'
+# Steam Deck fan control for debian-based distributions
+
+`jupiter-fan-control` package from SteamOS, repackaged for Ubuntu (and possibly other Debian-based distributions, but haven't tested it on anything else). Controls the fan speed more intelligently than the default BIOS fan curve, based on the temperature of various components, and the current power state of the system. Relies on steamdeck hwmon. Please install the [DKMS module](https://github.com/firlin123/steamdeck-dkms) to get the necessary hwmon support (or use SteamOS kernel, which has it built-in). Works only on Steam Deck, and won't do anything on other hardware.
+
+## Installation
+Download the latest .deb file from releases page and install it.
+
+## Building from source
+```bash
+sudo apt update
+sudo apt install -y dpkg-dev debhelper git
+git clone https://github.com/firlin123/jupiter-fan-control-deb.git
+cd jupiter-fan-control-deb
+dpkg-buildpackage -us -uc
+```
+
+## Pulling updates from upstream
+```bash
+sudo apt update
+sudo apt install -y dpkg-dev debhelper git wget
+git clone https://github.com/firlin123/jupiter-fan-control-deb.git
+cp jupiter-fan-control-deb/prepare.sh ./
+# Edit the prepare.sh file to set the version variables to the desired version, then run it.
+./prepare.sh
+cd jupiter-fan-control-deb
+rm -r *
+mv ../jupiter-fan-control/*/* ./
+git add .
+# Choose a desired commit message, usually - the version number.
+git commit -m "<package version>"
+git push
+```
+EOF
 
 echo "Generating debian files..."
 mkdir -p debian
 mkdir -p debian/source
-echo -e '1.0' > debian/source/format
-echo -e '10' > debian/compat
-echo 'Source: '"$PKGBASE"'
+echo '1.0' > debian/source/format
+echo '10' > debian/compat
+cat > debian/control <<EOF
+Source: $PKGBASE
 Section: utils
 Priority: optional
-Maintainer: '"$MAINTAINERS"'
+Maintainer: $maintainer
+Uploaders: $uploaders
 Standards-Version: 4.7.0
 
-Package: '"$PKGBASE"'
+Package: $PKGBASE
 Architecture: all
 Depends: python3-yaml, python3 (>= 3.11)
-Description: Jupiter fan controller
-' > debian/control
-echo -e '#!/usr/bin/make -f
+Description: Steam Deck fan control for debian-based distributions
+ Controls the fan speed more intelligently than the default BIOS fan curve, based on the temperature of various components, and the current power state of the system. Relies on steamdeck hwmon. Please install the DKMS module to get the necessary hwmon support (or use SteamOS kernel, which has it built-in). Works only on Steam Deck, and won't do anything on other hardware.
+EOF
+cat > debian/rules <<EOF
+#!/usr/bin/make -f
 
 %:
-'"\t"'dh $@
+	dh \$@
 
 override_dh_install:
-'"\t"'mkdir -p $(CURDIR)/debian/'"$PKGBASE"'
-'"\t"'cp -r $(CURDIR)/usr $(CURDIR)/debian/'"$PKGBASE"'/
-' > debian/rules
+	mkdir -p \$(CURDIR)/debian/$PKGBASE
+	cp -r \$(CURDIR)/usr \$(CURDIR)/debian/$PKGBASE/
+EOF
 chmod +x debian/rules
-generate-changelog > debian/changelog
+generate_changelog > debian/changelog
 
-echo "Done. You can now build the package with 'cd $PKGBASE/$PKGBASE-$PKGVER && dpkg-buildpackage -us -uc'"
-
+echo "Done. You can now build the package with 'cd $pkg_name && dpkg-buildpackage -us -uc'"
 cd ../..
