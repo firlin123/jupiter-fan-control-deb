@@ -1,10 +1,10 @@
 #!/bin/bash
 
 PKGBASE="jupiter-fan-control"
-PKGVER="20260319.1"
-PKGREL="4"
+PKGVER="20260422.2"
+PKGREL="1"
 
-TAG="20260319.1"
+TAG="20260422.2"
 SRCNAME="jupiter-fan-control"
 
 pkg_name="$PKGBASE-$PKGVER"

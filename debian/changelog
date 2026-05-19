@@ -1,3 +1,16 @@
+jupiter-fan-control (20260422.2) unstable; urgency=medium
+
+  * 6182cb1 - Fremont config & improvements (Adam Weld <weld@valvesoftware.com>)
+  * 1a69c5e - Revert "update hysteresis logic to unify with fremont fan control" (Adam Weld <adam.weld@gmail.com>)
+
+ -- Adam Weld <weld@valvesoftware.com>  Wed, 22 Apr 2026 17:10:03 -0700
+
+jupiter-fan-control (20260422.1) unstable; urgency=medium
+
+  * c01b734 - update hysteresis logic to unify with fremont fan control (Adam Weld <adam.weld@gmail.com>)
+
+ -- Adam Weld <adam.weld@gmail.com>  Wed, 22 Apr 2026 15:43:38 -0700
+
 jupiter-fan-control (20260319.1) unstable; urgency=medium
 
   * 2330edd - Do not attempt to run as a service if DMI information isn't available (Olivier Tilloy <otilloy@igalia.com>)
